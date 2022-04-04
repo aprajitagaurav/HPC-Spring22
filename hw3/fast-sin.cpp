@@ -49,6 +49,46 @@ void sin4_taylor(double* sinx, const double* x) {
   }
 }
 
+void sin4_taylor1(double* sinx, const double* x) {
+  for (int i = 0; i < 4; i++) {
+    double x1  = x[i];
+    double x2  = x1 * x1;
+    double x4  = x2 * x2;
+    double x6  = x4 * x2;
+    double x8  = x6 *  x2;
+    double x10 = x8 * x2;
+    double x12 = x10 * x2;
+    double x14 = x12 * x2;
+    //double x16 = x12 * x2;
+    //double x18 = x12 * x2;
+    //double x20 = x12 * x2;
+
+    static constexpr double c2  = -1/(((double)2));
+    static constexpr double c4  =  1/(((double)2)*3*4);
+    static constexpr double c6  = -1/(((double)2)*3*4*5*6);
+    static constexpr double c8  =  1/(((double)2)*3*4*5*6*7*8);
+    static constexpr double c10 = -1/(((double)2)*3*4*5*6*7*8*9*10);
+    static constexpr double c12 = 1/(((double)2)*3*4*5*6*7*8*9*10*11*12);
+    static constexpr double c14 = -1/(((double)2)*3*4*5*6*7*8*9*10*11*12*13*14);
+    //static constexpr double c16 = -1/(((double)2)*3*4*5*6*7*8*9*10*11*12*13*14*15*16);
+    //static constexpr double c18 = -1/(((double)2)*3*4*5*6*7*8*9*10*11*12*13*14*15*16*17*18);
+    //static constexpr double c20 = -1/(((double)2)*3*4*5*6*7*8*9*10*11*12*13*14*15*16*17*18*19*20);
+
+    double s = 1;
+    s += x2  * c2;
+    s += x4  * c4;
+    s += x6  * c6;
+    s += x8  * c8;
+    s += x10 * c10;
+    s += x12 * c12;
+    s += x14 * c14;
+    //s += x16 * c16;
+    //s += x18 * c18;
+    //s += x20 * c20;
+    sinx[i] = s;
+  }
+}
+
 void sin4_intrin(double* sinx, const double* x) {
   // The definition of intrinsic functions can be found at:
   // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#
@@ -110,6 +150,38 @@ void sin4_vector(double* sinx, const double* x) {
   s.StoreAligned(sinx);
 }
 
+void sin4_vector1(double* sinx, const double* x) {
+  // The Vec class is defined in the file intrin-wrapper.h
+  typedef Vec<double,4> Vec4;
+  Vec4 x1, x2, x4, x6,x8, x10, x12, x14;
+  x1  = Vec4::LoadAligned(x);
+  x2  = x1 * x1;
+  x4  = x2 * x2;
+  x6  = x4 * x2;
+  x8  = x6 *  x2;
+  x10 = x8 * x2;
+  x12 = x10 * x2;
+  x14 = x12 * x2;
+
+  static constexpr double c2  = -1/(((double)2));
+  static constexpr double c4  =  1/(((double)2)*3*4);
+  static constexpr double c6  = -1/(((double)2)*3*4*5*6);
+  static constexpr double c8  =  1/(((double)2)*3*4*5*6*7*8);
+  static constexpr double c10 = -1/(((double)2)*3*4*5*6*7*8*9*10);
+  static constexpr double c12 = 1/(((double)2)*3*4*5*6*7*8*9*10*11*12);
+  static constexpr double c14 = -1/(((double)2)*3*4*5*6*7*8*9*10*11*12*13*14);
+
+  Vec4 s = 1;
+  s += x2  * c2;
+  s += x4  * c4;
+  s += x6  * c6;
+  s += x8  * c8;
+  s += x10 * c10;
+  s += x12 * c12;
+  s += x14 * c14;
+  s.StoreAligned(sinx);
+}
+
 double err(double* x, double* y, long N) {
   double error = 0;
   for (long i = 0; i < N; i++) error = std::max(error, fabs(x[i]-y[i]));
@@ -118,14 +190,24 @@ double err(double* x, double* y, long N) {
 
 int main() {
   Timer tt;
-  long N = 1000000;
+  long N = 10;
   double* x = (double*) aligned_malloc(N*sizeof(double));
   double* sinx_ref = (double*) aligned_malloc(N*sizeof(double));
   double* sinx_taylor = (double*) aligned_malloc(N*sizeof(double));
   double* sinx_intrin = (double*) aligned_malloc(N*sizeof(double));
   double* sinx_vector = (double*) aligned_malloc(N*sizeof(double));
+
+  double* x1 = (double*) aligned_malloc(N*sizeof(double));
+  double* sinx_ref1 = (double*) aligned_malloc(N*sizeof(double));
+  double* sinx_taylor1 = (double*) aligned_malloc(N*sizeof(double));
+  double* sinx_vector1 = (double*) aligned_malloc(N*sizeof(double));
+
+  
   for (long i = 0; i < N; i++) {
     x[i] = (drand48()-0.5) * M_PI/2; // [-pi/4,pi/4]
+    //outside 
+    x1[i] = x[i] + M_PI/2; 
+    //cout<<"x[i]="<<x[i]<<"   x1[i]="<<x1[i]<<endl;
     sinx_ref[i] = 0;
     sinx_taylor[i] = 0;
     sinx_intrin[i] = 0;
@@ -163,6 +245,35 @@ int main() {
     }
   }
   printf("Vector time:    %6.4f      Error: %e\n", tt.toc(), err(sinx_ref, sinx_vector, N));
+
+  //extra credit
+  printf("\n-----------Calculations for outside [-pi/2, pi/2]-----------\n");
+  tt.tic();
+  for (long rep = 0; rep < 1000; rep++) {
+    for (long i = 0; i < N; i+=4) {
+      sin4_reference(sinx_ref1+i, x1+i);
+    }
+  }
+  printf("Reference time: %6.4f\n", tt.toc());
+
+
+  tt.tic();
+  for (long rep = 0; rep < 1000; rep++) {
+    for (long i = 0; i < N; i+=4) {
+      sin4_taylor1(sinx_taylor1+i, x1+i);
+    }
+  }
+  printf("Taylor time:    %6.4f      Error: %e\n", tt.toc(), err(sinx_ref1, sinx_taylor1, N));
+
+
+  tt.tic();
+  for (long rep = 0; rep < 1000; rep++) {
+    for (long i = 0; i < N; i+=4) {
+      sin4_vector1(sinx_vector1+i, x1+i);
+    }
+  }
+  printf("Vector time:    %6.4f      Error: %e\n", tt.toc(), err(sinx_ref1, sinx_vector1, N));
+
 
   aligned_free(x);
   aligned_free(sinx_ref);
