@@ -190,7 +190,7 @@ double err(double* x, double* y, long N) {
 
 int main() {
   Timer tt;
-  long N = 10;
+  long N = 1000000;
   double* x = (double*) aligned_malloc(N*sizeof(double));
   double* sinx_ref = (double*) aligned_malloc(N*sizeof(double));
   double* sinx_taylor = (double*) aligned_malloc(N*sizeof(double));
@@ -251,7 +251,7 @@ int main() {
   tt.tic();
   for (long rep = 0; rep < 1000; rep++) {
     for (long i = 0; i < N; i+=4) {
-      sin4_reference(sinx_ref1+i, x1+i);
+      sin4_reference(sinx_ref1+i, x+i);
     }
   }
   printf("Reference time: %6.4f\n", tt.toc());
@@ -260,7 +260,7 @@ int main() {
   tt.tic();
   for (long rep = 0; rep < 1000; rep++) {
     for (long i = 0; i < N; i+=4) {
-      sin4_taylor1(sinx_taylor1+i, x1+i);
+      sin4_taylor1(sinx_taylor1+i, x+i);
     }
   }
   printf("Taylor time:    %6.4f      Error: %e\n", tt.toc(), err(sinx_ref1, sinx_taylor1, N));
@@ -269,7 +269,7 @@ int main() {
   tt.tic();
   for (long rep = 0; rep < 1000; rep++) {
     for (long i = 0; i < N; i+=4) {
-      sin4_vector1(sinx_vector1+i, x1+i);
+      sin4_vector1(sinx_vector1+i, x+i);
     }
   }
   printf("Vector time:    %6.4f      Error: %e\n", tt.toc(), err(sinx_ref1, sinx_vector1, N));
